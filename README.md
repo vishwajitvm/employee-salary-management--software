@@ -11,7 +11,7 @@ Welcome to the **ACME HR & Salary Management System**. This is an enterprise-gra
 
 
 ## 🎥 Application Demo
-<video src="./frontend/video/demo.mp4" autoplay loop muted playsinline width="100%"></video>
+<video src="https://github.com/vishwajitvm/employee-salary-management--software/raw/master/frontend/video/demo.mp4" autoplay loop muted playsinline width="100%"></video>
 
 *(Note: If your browser does not support mp4, a `.webm` version is also available in `frontend/video/demo.webm`)*
 
