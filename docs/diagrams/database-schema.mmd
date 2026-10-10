@@ -1,0 +1,13 @@
+erDiagram
+  EMPLOYEES {
+    uuid id PK "Unique Identifier"
+    string first_name "Employee First Name"
+    string last_name "Employee Last Name"
+    string email "Company Email"
+    string department "Indexed: For fast filtering (e.g. Engineering, Sales)"
+    string country "Indexed: For fast filtering (e.g. USA, India)"
+    decimal base_salary "The current salary amount"
+    string currency "e.g., USD, INR"
+    timestamp created_at "Record creation date"
+    timestamp updated_at "Last time record was updated"
+  }

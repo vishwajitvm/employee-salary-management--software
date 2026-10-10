@@ -1,0 +1,30 @@
+flowchart TD
+  subgraph Client
+    UI["HR Manager (Web Browser)"]
+  end
+  
+  subgraph Frontend Container
+    NextJS["Next.js Application (React, Tailwind UI)"]
+  end
+  
+  subgraph Backend Container
+    FastAPI["FastAPI Web Server (Python, REST API)"]
+  end
+  
+  subgraph Background Processing
+    Redis["Redis (Message Broker)"]
+    Celery["Celery Worker (Async Tasks)"]
+  end
+  
+  subgraph Data Storage
+    PG["PostgreSQL Database (Relational Data)"]
+  end
+
+  UI -->|HTTP / REST| NextJS
+  NextJS -->|HTTP / REST| FastAPI
+  
+  FastAPI -->|Read / Write| PG
+  FastAPI -->|Push Heavy Task| Redis
+  
+  Redis -->|Consume Task| Celery
+  Celery -->|Execute Bulk Operations| PG

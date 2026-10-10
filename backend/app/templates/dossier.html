@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Employee Dossier</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @frame footer {
+                -pdf-frame-content: footerContent;
+                bottom: 1cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 1cm;
+                text-align: center;
+                font-family: Helvetica, sans-serif;
+                font-size: 9pt;
+                color: #888888;
+            }
+        }
+        body {
+            font-family: Helvetica, sans-serif;
+            color: #333333;
+            line-height: 1.5;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #4f46e5;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #1e1b4b;
+            margin: 0;
+            font-size: 28pt;
+            letter-spacing: 1px;
+        }
+        .header p {
+            color: #6366f1;
+            margin: 5px 0 0 0;
+            font-size: 12pt;
+            font-weight: bold;
+        }
+        .section-title {
+            background-color: #f8fafc;
+            color: #1e293b;
+            padding: 8px 12px;
+            font-size: 14pt;
+            font-weight: bold;
+            border-left: 4px solid #4f46e5;
+            margin-bottom: 15px;
+        }
+        .profile-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .profile-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .profile-label {
+            font-weight: bold;
+            color: #475569;
+            width: 30%;
+        }
+        .profile-value {
+            color: #0f172a;
+            font-size: 11pt;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .history-table th {
+            background-color: #4f46e5;
+            color: #ffffff;
+            font-weight: bold;
+            padding: 12px;
+            text-align: left;
+            font-size: 10pt;
+        }
+        .history-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 10pt;
+            color: #334155;
+        }
+        .history-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .badge {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .no-data {
+            text-align: center;
+            color: #94a3b8;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ACME CORPORATION</h1>
+        <p>CONFIDENTIAL EMPLOYEE DOSSIER</p>
+    </div>
+
+    <div class="section-title">Personal Profile</div>
+    <table class="profile-table">
+        <tr>
+            <td class="profile-label">Employee ID</td>
+            <td class="profile-value">{{ emp.id }}</td>
+        </tr>
+        <tr>
+            <td class="profile-label">Full Name</td>
+            <td class="profile-value">{{ emp.first_name }} {{ emp.last_name }}</td>
+        </tr>
+        <tr>
+            <td class="profile-label">Email Address</td>
+            <td class="profile-value">{{ emp.email }}</td>
+        </tr>
+        <tr>
+            <td class="profile-label">Department</td>
+            <td class="profile-value">{{ emp.department }}</td>
+        </tr>
+        <tr>
+            <td class="profile-label">Location</td>
+            <td class="profile-value">{{ emp.city }}, {{ emp.country }}</td>
+        </tr>
+        <tr>
+            <td class="profile-label">Current Base Salary</td>
+            <td class="profile-value" style="font-weight: bold; color: #4f46e5;">{{ currency_display }}{{ current_salary }}</td>
+        </tr>
+        <tr>
+            <td class="profile-label">Report Generated On</td>
+            <td class="profile-value">{{ generated_date }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Salary Modification History</div>
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Date & Time (UTC)</th>
+                <th>Old Salary</th>
+                <th>New Salary</th>
+                <th class="text-center">Increase %</th>
+                <th class="text-right">Net Change</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if history|length == 0 %}
+            <tr>
+                <td colspan="5" class="no-data">No salary history records found for this employee.</td>
+            </tr>
+            {% else %}
+                {% for h in history %}
+                <tr>
+                    <td>{{ h.date }}</td>
+                    <td>{{ currency_display }}{{ h.old_salary }}</td>
+                    <td>{{ currency_display }}{{ h.new_salary }}</td>
+                    <td class="text-center"><span class="badge">+{{ h.percentage }}%</span></td>
+                    <td class="text-right">+{{ currency_display }}{{ h.amount }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div id="footerContent">
+        ACME Corporation - Internal Use Only - Generated via ACME HR System
+    </div>
+</body>
+</html>

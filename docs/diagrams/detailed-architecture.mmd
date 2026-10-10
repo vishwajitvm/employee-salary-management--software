@@ -1,0 +1,98 @@
+flowchart TD
+  %% External Systems
+  ExternalAPI["External Exchange Rate API (open.er-api.com)"]
+
+  subgraph "Scaling & Load Balancing Layer (Conceptual)"
+    LB["Load Balancer / Reverse Proxy (e.g. Nginx, AWS ALB)<br/>Distributes traffic across multiple FastAPI replicas"]
+  end
+
+  subgraph "Client Layer (HR Manager's Browser)"
+    User["HR Manager"]
+    SweetAlert["SweetAlert2 (Visual UI Feedback)"]
+    UI_Dashboard["Dashboard & Employee Directory<br/>(Shows INR and USD using live rates)"]
+    UI_Seeder["Data Seeder Page<br/>(Displays progress bar & triggers chunks)"]
+  end
+
+  subgraph "Frontend Container (Next.js)"
+    Axios["Axios API Client<br/>(Contains global interceptors for errors)"]
+    UI_Dashboard --> Axios
+    UI_Seeder --> Axios
+  end
+
+  subgraph "Backend Container (FastAPI Python)"
+    Router["FastAPI Router<br/>(Validates incoming data & auth)"]
+    
+    GlobalException["Global Exception Handler<br/>(Catches errors, formats as JSON for SweetAlert)"]
+    TraceNest["TraceNest Logger<br/>(Records all actions & failures)"]
+    
+    EP_Read["GET /employees<br/>(Server-side Pagination & Filtering)"]
+    EP_Seed["POST /seed/chunk<br/>(Accepts 1,000 rows at a time)"]
+    EP_Bulk["POST /salaries/bulk-update<br/>(Fast response to UI, pushes task to background)"]
+
+    Router --> EP_Read
+    Router --> EP_Seed
+    Router --> EP_Bulk
+  end
+
+  subgraph "Message Broker & Cache Container"
+    Redis["Redis<br/>(Acts as Celery Message Queue & Data Cache)"]
+  end
+
+  subgraph "Background Worker Container"
+    Celery["Celery Worker<br/>(Processes heavy tasks asynchronously so API never blocks)"]
+  end
+
+  subgraph "Database Container (PostgreSQL)"
+    DBTx["Transaction Manager<br/>(Ensures ACID compliance)"]
+    Rollback["Automated Rollback<br/>(Triggered on any failure)"]
+    DB["PostgreSQL Database<br/>(Indexes on Department & Country for extreme speed)"]
+  end
+
+  %% --- FLOW CONNECTIONS ---
+
+  %% User Interactions
+  User -->|Interacts| UI_Dashboard
+  User -->|Clicks 'Start Seeding'| UI_Seeder
+  UI_Dashboard -.->|Fetches Exchange Rates| ExternalAPI
+  
+  %% Network Flow
+  Axios -->|HTTP REST Calls| LB
+  LB -->|Routes to healthy backend| Router
+
+  %% Exception & Logging Handling
+  Router -.->|On Validation/System Error| GlobalException
+  GlobalException -.->|Returns 4xx/5xx JSON| Axios
+  Axios -.->|Intercepts and displays| SweetAlert
+  Router -.->|Logs every request/error| TraceNest
+  Celery -.->|Logs task progress| TraceNest
+  
+  %% Read / Cache Flow
+  EP_Read -->|1. Check Cache for quick response| Redis
+  EP_Read -->|2. Query DB if cache miss| DB
+  
+  %% Seeding & Rollback Flow
+  EP_Seed -->|1. Bulk Insert 1,000 rows| DBTx
+  DBTx -->|2a. If Successful: COMMIT| DB
+  DBTx -.->|2b. If Error: ROLLBACK| Rollback
+  Rollback -.->|3. Prevents Partial/Corrupt Data| DB
+  
+  %% Bulk Update Flow (Scaling Heavy Work)
+  EP_Bulk -->|1. Push Job Ticket| Redis
+  Redis -->|2. Worker Consumes Ticket| Celery
+  Celery -->|3. Heavy SQL UPDATE| DBTx
+
+  %% Styling Definitions
+  classDef frontend fill:#e0f2fe,stroke:#0284c7,stroke-width:2px;
+  classDef backend fill:#dcfce7,stroke:#16a34a,stroke-width:2px;
+  classDef db fill:#fef08a,stroke:#ca8a04,stroke-width:2px;
+  classDef worker fill:#f3e8ff,stroke:#9333ea,stroke-width:2px;
+  classDef external fill:#f3f4f6,stroke:#4b5563,stroke-width:2px,stroke-dasharray: 5 5;
+  classDef error fill:#fee2e2,stroke:#dc2626,stroke-width:2px,stroke-dasharray: 5 5;
+  
+  %% Applying Styles
+  class UI_Dashboard,UI_Seeder,Axios frontend;
+  class Router,GlobalException,TraceNest,EP_Read,EP_Seed,EP_Bulk backend;
+  class DB,DBTx,Redis db;
+  class Celery worker;
+  class ExternalAPI,LB external;
+  class Rollback,SweetAlert error;

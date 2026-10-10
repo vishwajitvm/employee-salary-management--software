@@ -1,0 +1,35 @@
+sequenceDiagram
+  autonumber
+  actor HR as HR Manager
+  participant UI as Next.js Frontend
+  participant API as FastAPI Backend
+  participant Celery as Background Worker
+  participant DB as PostgreSQL
+
+  note over HR, DB: 1. Viewing the Analytics Dashboard
+  HR->>UI: Logs in & views Dashboard
+  UI->>API: GET /api/v1/analytics/summary
+  API->>DB: Execute Aggregation Queries (AVG, SUM, COUNT)
+  DB-->>API: Return Aggregated Metrics
+  API-->>UI: JSON Payload (Metrics data)
+  UI-->>HR: Renders beautiful charts and KPIs
+
+  note over HR, DB: 2. Browsing 10,000+ Employees Safely
+  HR->>UI: Navigates to Employee Directory
+  UI->>API: GET /api/v1/employees?page=1&limit=50&department=Engineering
+  API->>DB: Execute Indexed SQL Query with OFFSET/LIMIT
+  DB-->>API: Return exactly 50 rows
+  API-->>UI: JSON Payload (50 records + Total Count)
+  UI-->>HR: Displays fast, responsive data table
+
+  note over HR, DB: 3. Performing a Bulk Salary Update (The Scalable Way)
+  HR->>UI: Clicks "Give 5% Raise to Engineering"
+  UI->>API: POST /api/v1/salaries/bulk-update (Dept: Engineering, +5%)
+  API->>Celery: Enqueue Background Task (Do not block the API!)
+  API-->>UI: HTTP 202 Accepted (Returns Task ID)
+  UI-->>HR: Displays "Update in progress..." toast notification
+  
+  Celery->>DB: Execute Heavy Bulk UPDATE SQL
+  DB-->>Celery: Commit Transaction
+  Celery-->>UI: Task Complete (UI polls or gets WebSocket event)
+  UI-->>HR: Displays "Success! Salaries Updated."
