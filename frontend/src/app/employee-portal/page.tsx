@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { useCurrency } from "@/lib/CurrencyContext";
 import { LogOut, User, Building, MapPin, Download, Loader2, ArrowRight } from "lucide-react";
 
-export default function EmployeePortal() {
+function EmployeePortalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
@@ -187,5 +187,16 @@ export default function EmployeePortal() {
         </div>
       </main>
     </div>
+  );
+}
+
+
+import { Suspense } from 'react';
+
+export default function EmployeePortal() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><Loader2 className="w-12 h-12 text-indigo-600 animate-spin" /></div>}>
+      <EmployeePortalContent />
+    </Suspense>
   );
 }
