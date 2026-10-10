@@ -163,7 +163,7 @@ function DashboardInterior({ children }: { children: React.ReactNode }) {
             
             {/* User Avatar */}
             <div className="flex items-center pl-6 border-l border-slate-200 dark:border-slate-700">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 border-2 border-white dark:border-slate-800 shadow-md"></div>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 border-2 border-white dark:border-slate-800 shadow-md flex items-center justify-center text-white font-bold text-sm tracking-wide" title="HR Admin">HR</div>
             </div>
           </div>
         </header>
