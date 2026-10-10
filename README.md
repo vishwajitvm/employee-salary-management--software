@@ -8,6 +8,13 @@
 
 Welcome to the **ACME HR & Salary Management System**. This is an enterprise-grade web application designed to securely manage employee directories, track global salary histories, and execute massive background salary updates without skipping a beat.
 
+
+
+## 🎥 Application Demo
+<video src="./frontend/video/demo.mp4" autoplay loop muted playsinline width="100%"></video>
+
+*(Note: If your browser does not support mp4, a `.webm` version is also available in `frontend/video/demo.webm`)*
+
 ---
 
 ## 📖 What Is This Project? (Layman's Terms)
