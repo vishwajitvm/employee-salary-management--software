@@ -101,4 +101,4 @@ All background activities, errors, and system events are silently captured by **
 - **Persistence**: PostgreSQL
 
 ---
-**Maintained by:** ACME Developer Team | **Status:** Stable Release 1.0
+**Maintained by:** Vishwajit VM (vishwajitmall50@gmail.com) | **Status:** Stable Release 1.0
