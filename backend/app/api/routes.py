@@ -9,7 +9,7 @@ from tracenest import logger
 
 from app.database import get_db
 from app.models import Employee, SalaryHistory
-from app.schemas import BulkUpdateSchema, SweetAlertResponse
+from app.schemas import BulkUpdateSchema, SweetAlertResponse, EmployeeCreate
 from app.tasks import process_bulk_salary_update, celery_app
 from celery.result import AsyncResult
 
@@ -19,6 +19,32 @@ from jinja2 import Environment, FileSystemLoader
 import os
 
 router = APIRouter()
+
+@router.get("/employees/check-email")
+def check_email(email: str, db: Session = Depends(get_db)):
+    exists = db.query(Employee).filter(Employee.email.ilike(email)).first() is not None
+    return {"exists": exists}
+
+@router.post("/employees")
+def create_employee(emp: EmployeeCreate, db: Session = Depends(get_db)):
+    if db.query(Employee).filter(Employee.email.ilike(emp.email)).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    db_emp = Employee(
+        first_name=emp.first_name,
+        last_name=emp.last_name,
+        email=emp.email,
+        department=emp.department,
+        country=emp.country,
+        city=emp.city,
+        base_salary=emp.base_salary,
+        currency="USD"
+    )
+    db.add(db_emp)
+    db.commit()
+    db.refresh(db_emp)
+    return {"success": True, "employee_id": db_emp.id}
+
 
 # Setup Jinja2 for PDF Templates
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

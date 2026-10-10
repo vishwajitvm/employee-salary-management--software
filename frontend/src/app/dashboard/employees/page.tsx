@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import api from "@/lib/api";
 import { useCurrency } from "@/lib/CurrencyContext";
 import Swal from "sweetalert2";
-import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Zap, Filter, Users, Download, FileText, Loader2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Zap, Users, Download, FileText, Loader2, Plus, X, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -29,6 +29,16 @@ export default function EmployeesPage() {
   
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  
+  // Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEmp, setNewEmp] = useState({
+    first_name: "", last_name: "", email: "", department: "Engineering", country: "", city: "", base_salary: ""
+  });
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout>();
+
   const { currency, usdRate } = useCurrency();
 
   const fetchEmployees = useCallback(async () => {
@@ -185,14 +195,63 @@ export default function EmployeesPage() {
     return pages;
   };
 
+  // --- Modal Logic ---
+  const handleEmailChange = (val: string) => {
+    setNewEmp({ ...newEmp, email: val });
+    if (!val.includes("@") || !val.includes(".")) {
+      setEmailStatus("idle");
+      return;
+    }
+    setEmailStatus("checking");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await api.get(`/employees/check-email?email=${encodeURIComponent(val)}`);
+        setEmailStatus(res.data.exists ? "taken" : "available");
+      } catch {
+        setEmailStatus("idle");
+      }
+    }, 500);
+  };
+
+  const handleCreateEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (emailStatus === "taken") return;
+    setIsSubmitting(true);
+    try {
+      await api.post("/employees", {
+        ...newEmp,
+        base_salary: Number(newEmp.base_salary) || 0
+      });
+      setShowAddModal(false);
+      setNewEmp({ first_name: "", last_name: "", email: "", department: "Engineering", country: "", city: "", base_salary: "" });
+      setEmailStatus("idle");
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Employee added successfully',
+        showConfirmButton: false,
+        timer: 3000
+      });
+      fetchEmployees();
+    } catch (err: any) {
+      if (err.response?.status === 400) {
+        setEmailStatus("taken");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-10 relative">
       
       {/* Premium Filters & Actions Bar */}
       <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] border border-slate-100 dark:border-slate-700/60 flex flex-col xl:flex-row justify-between items-center gap-6 relative z-10">
         
-        <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full xl:w-2/3 relative">
-          
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full xl:w-[60%] relative">
           <div className="relative flex-1 min-w-[200px] group">
             <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             <input
@@ -202,7 +261,6 @@ export default function EmployeesPage() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
-            {/* Inner Spinner on Search */}
             {loading && search && (
                <Loader2 className="absolute right-4 top-3.5 h-5 w-5 text-indigo-500 animate-spin" />
             )}
@@ -222,49 +280,126 @@ export default function EmployeesPage() {
             <option value="Legal">Legal</option>
             <option value="Operations">Operations</option>
           </select>
-
-          <input
-            type="text"
-            placeholder="Country..."
-            className="w-full sm:w-32 px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
-            value={country}
-            onChange={(e) => { setCountry(e.target.value); setPage(1); }}
-          />
-
-          <input
-            type="text"
-            placeholder="City..."
-            className="w-full sm:w-32 px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
-            value={city}
-            onChange={(e) => { setCity(e.target.value); setPage(1); }}
-          />
         </div>
 
-        <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-4">
+        <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-3">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center justify-center px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all font-bold tracking-wide"
+          >
+            <Plus className="w-5 h-5 mr-1" />
+            New
+          </button>
+          
           <button
             onClick={handleExportGlobalReport}
             disabled={exporting}
-            className="flex-1 xl:flex-none flex items-center justify-center px-5 py-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-all font-bold tracking-wide disabled:opacity-70"
-            title="Download Master CSV Report for active filters"
+            className="flex items-center justify-center px-4 py-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-all font-bold tracking-wide disabled:opacity-70"
+            title="Download Master CSV Report"
           >
             {exporting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
-            Master Report
+            Export
           </button>
           
           <button
             onClick={handleBulkUpdate}
-            className="flex-1 xl:flex-none flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all font-bold tracking-wide"
+            className="flex items-center justify-center px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all font-bold tracking-wide"
           >
             <Zap className="w-5 h-5 mr-2 fill-white/20" />
-            Bulk Update
+            Update
           </button>
         </div>
       </div>
 
+      {/* Add Employee Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-700">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Add New Employee</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateEmployee} className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">First Name</label>
+                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white" value={newEmp.first_name} onChange={e => setNewEmp({...newEmp, first_name: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Last Name</label>
+                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white" value={newEmp.last_name} onChange={e => setNewEmp({...newEmp, last_name: e.target.value})} />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email Address</label>
+                <div className="relative">
+                  <input 
+                    required 
+                    type="email" 
+                    className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border rounded-xl focus:ring-2 outline-none dark:text-white pr-12 transition-all ${emailStatus === 'taken' ? 'border-red-500 focus:ring-red-500' : emailStatus === 'available' ? 'border-emerald-500 focus:ring-emerald-500' : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500'}`} 
+                    value={newEmp.email} 
+                    onChange={e => handleEmailChange(e.target.value)} 
+                  />
+                  <div className="absolute right-4 top-3.5">
+                    {emailStatus === 'checking' && <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />}
+                    {emailStatus === 'available' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                    {emailStatus === 'taken' && <AlertCircle className="w-5 h-5 text-red-500" />}
+                  </div>
+                </div>
+                {emailStatus === 'taken' && (
+                  <p className="text-red-500 text-sm font-medium mt-2 flex items-center"><AlertCircle className="w-4 h-4 mr-1"/> This email is already registered!</p>
+                )}
+                {emailStatus === 'available' && (
+                  <p className="text-emerald-500 text-sm font-medium mt-2 flex items-center"><CheckCircle2 className="w-4 h-4 mr-1"/> Email is available</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Department</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white" value={newEmp.department} onChange={e => setNewEmp({...newEmp, department: e.target.value})}>
+                    <option>Engineering</option><option>Sales</option><option>Marketing</option><option>Finance</option><option>HR</option><option>Legal</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Country</label>
+                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white" value={newEmp.country} onChange={e => setNewEmp({...newEmp, country: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">City</label>
+                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white" value={newEmp.city} onChange={e => setNewEmp({...newEmp, city: e.target.value})} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Base Salary (USD)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 text-slate-400 font-bold">$</span>
+                  <input required type="number" step="0.01" className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white" value={newEmp.base_salary} onChange={e => setNewEmp({...newEmp, base_salary: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-6 py-3 text-slate-600 dark:text-slate-300 font-bold mr-4 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={emailStatus === 'taken' || isSubmitting} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Plus className="w-5 h-5 mr-2" />}
+                  Save Employee
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Data Table */}
       <div className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-slate-100 dark:border-slate-700/60 overflow-hidden">
         
-        {/* Top Progress Loader for smooth transitions */}
         {loading && employees.length > 0 && (
           <div className="absolute top-0 left-0 w-full h-1 overflow-hidden bg-indigo-100 dark:bg-slate-700 z-20">
             <div className="h-full bg-indigo-500 animate-[pulse_1s_ease-in-out_infinite]" style={{ width: '100%' }}></div>
@@ -349,7 +484,6 @@ export default function EmployeesPage() {
         {/* Advanced Pagination & Row Limits */}
         <div className="bg-slate-50/80 dark:bg-slate-900/50 px-8 py-5 border-t border-slate-200 dark:border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-6">
           
-          {/* Row Limit Selector */}
           <div className="flex items-center space-x-3 text-sm font-medium text-slate-600 dark:text-slate-400">
             <span>Rows per page:</span>
             <select
@@ -375,69 +509,32 @@ export default function EmployeesPage() {
               Showing <span className="font-bold text-slate-900 dark:text-white">{total === 0 ? 0 : (page - 1) * size + 1}</span> to <span className="font-bold text-slate-900 dark:text-white">{Math.min(page * size, total)}</span> of <span className="font-bold text-slate-900 dark:text-white">{total}</span>
             </div>
             
-            {/* Advanced Pagination Buttons */}
             <div className="flex items-center space-x-1">
-              
-              {/* First Page */}
-              <button
-                onClick={() => setPage(1)}
-                disabled={page === 1 || loading}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-                title="First Page"
-              >
+              <button onClick={() => setPage(1)} disabled={page === 1 || loading} className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm">
                 <ChevronsLeft className="h-4 w-4" />
               </button>
               
-              {/* Previous Page */}
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm mr-2"
-                title="Previous Page"
-              >
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1 || loading} className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm mr-2">
                 <ChevronLeft className="h-4 w-4" />
               </button>
 
-              {/* Numbered Pages (1, 2, 3... n) */}
               {getPageNumbers().map((pageNum, index) => (
                 pageNum === '...' ? (
                   <span key={`ellipsis-${index}`} className="px-2 text-slate-400 font-medium">...</span>
                 ) : (
-                  <button
-                    key={`page-${pageNum}`}
-                    onClick={() => setPage(pageNum as number)}
-                    disabled={loading}
-                    className={`inline-flex items-center justify-center w-9 h-9 rounded-lg border transition-all shadow-sm font-semibold text-sm ${
-                      page === pageNum 
-                        ? "bg-indigo-600 border-indigo-600 text-white shadow-indigo-500/30 pointer-events-none" 
-                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed"
-                    }`}
-                  >
+                  <button key={`page-${pageNum}`} onClick={() => setPage(pageNum as number)} disabled={loading} className={`inline-flex items-center justify-center w-9 h-9 rounded-lg border transition-all shadow-sm font-semibold text-sm ${page === pageNum ? "bg-indigo-600 border-indigo-600 text-white shadow-indigo-500/30 pointer-events-none" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed"}`}>
                     {pageNum}
                   </button>
                 )
               ))}
 
-              {/* Next Page */}
-              <button
-                onClick={() => setPage(p => p + 1)}
-                disabled={page === totalPages || loading}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm ml-2"
-                title="Next Page"
-              >
+              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages || loading} className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm ml-2">
                 <ChevronRight className="h-4 w-4" />
               </button>
               
-              {/* Last Page */}
-              <button
-                onClick={() => setPage(totalPages)}
-                disabled={page === totalPages || loading}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-                title="Last Page"
-              >
+              <button onClick={() => setPage(totalPages)} disabled={page === totalPages || loading} className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm">
                 <ChevronsRight className="h-4 w-4" />
               </button>
-              
             </div>
           </div>
         </div>

@@ -13,3 +13,12 @@ class SweetAlertResponse(BaseModel):
     title: str
     message: str
     detail: Optional[str] = None
+
+class EmployeeCreate(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    department: str
+    country: str
+    city: str
+    base_salary: float
