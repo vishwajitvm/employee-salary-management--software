@@ -280,6 +280,37 @@ export default function EmployeesPage() {
             <option value="Legal">Legal</option>
             <option value="Operations">Operations</option>
           </select>
+          
+          <select
+            className="w-full sm:w-auto px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
+            value={country}
+            onChange={(e) => { setCountry(e.target.value); setPage(1); }}
+          >
+            <option value="">All Countries</option>
+            <option value="USA">USA</option>
+            <option value="India">India</option>
+            <option value="UK">UK</option>
+            <option value="Canada">Canada</option>
+            <option value="Germany">Germany</option>
+            <option value="Australia">Australia</option>
+            <option value="Singapore">Singapore</option>
+          </select>
+          
+          <select
+            className="w-full sm:w-auto px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
+            value={city}
+            onChange={(e) => { setCity(e.target.value); setPage(1); }}
+            disabled={!country}
+          >
+            <option value="">All Cities</option>
+            {country === "USA" && <><option>New York</option><option>San Francisco</option><option>Austin</option><option>Seattle</option><option>Chicago</option></>}
+            {country === "India" && <><option>Bangalore</option><option>Mumbai</option><option>Delhi</option><option>Hyderabad</option><option>Pune</option></>}
+            {country === "UK" && <><option>London</option><option>Manchester</option><option>Edinburgh</option><option>Bristol</option><option>Birmingham</option></>}
+            {country === "Canada" && <><option>Toronto</option><option>Vancouver</option><option>Montreal</option><option>Calgary</option><option>Ottawa</option></>}
+            {country === "Germany" && <><option>Berlin</option><option>Munich</option><option>Frankfurt</option><option>Hamburg</option><option>Stuttgart</option></>}
+            {country === "Australia" && <><option>Sydney</option><option>Melbourne</option><option>Brisbane</option><option>Perth</option><option>Adelaide</option></>}
+            {country === "Singapore" && <option>Singapore</option>}
+          </select>
         </div>
 
         <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-3">
@@ -306,7 +337,7 @@ export default function EmployeesPage() {
             className="flex items-center justify-center px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all font-bold tracking-wide"
           >
             <Zap className="w-5 h-5 mr-2 fill-white/20" />
-            Update
+            Bulk Update
           </button>
         </div>
       </div>
