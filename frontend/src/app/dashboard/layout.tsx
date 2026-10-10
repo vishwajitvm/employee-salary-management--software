@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LayoutDashboard, Users, LogOut, Database, Activity, Sun, Moon, Banknote, IndianRupee, DollarSign } from "lucide-react";
-import { CurrencyProvider, useCurrency } from "@/lib/CurrencyContext";
+import { useCurrency } from "@/lib/CurrencyContext";
 
 // Create a sub-component for the layout interior so it has access to useCurrency
 function DashboardInterior({ children }: { children: React.ReactNode }) {
@@ -179,10 +179,10 @@ function DashboardInterior({ children }: { children: React.ReactNode }) {
   );
 }
 
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <CurrencyProvider>
-      <DashboardInterior>{children}</DashboardInterior>
-    </CurrencyProvider>
+    <DashboardInterior>{children}</DashboardInterior>
   );
 }
+
