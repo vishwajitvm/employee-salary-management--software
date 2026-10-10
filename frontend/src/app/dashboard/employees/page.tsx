@@ -249,10 +249,12 @@ export default function EmployeesPage() {
     <div className="space-y-6 pb-10 relative">
       
       {/* Premium Filters & Actions Bar */}
-      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] border border-slate-100 dark:border-slate-700/60 flex flex-col xl:flex-row justify-between items-center gap-6 relative z-10">
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] border border-slate-100 dark:border-slate-700/60 flex flex-col gap-4 relative z-10">
         
-        <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full xl:w-[60%] relative">
-          <div className="relative flex-1 min-w-[200px] group">
+        {/* Top Row: Search & Actions */}
+        <div className="flex flex-col xl:flex-row justify-between gap-4">
+          
+          <div className="relative flex-1 group min-w-0">
             <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             <input
               type="text"
@@ -265,9 +267,40 @@ export default function EmployeesPage() {
                <Loader2 className="absolute right-4 top-3.5 h-5 w-5 text-indigo-500 animate-spin" />
             )}
           </div>
-          
+
+          <div className="flex flex-wrap sm:flex-nowrap gap-3 shrink-0">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex-1 sm:flex-none items-center justify-center px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all font-bold tracking-wide flex"
+            >
+              <Plus className="w-5 h-5 mr-1" />
+              New
+            </button>
+            
+            <button
+              onClick={handleExportGlobalReport}
+              disabled={exporting}
+              className="flex-1 sm:flex-none items-center justify-center px-4 py-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-all font-bold tracking-wide disabled:opacity-70 flex"
+              title="Download Master CSV Report"
+            >
+              {exporting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
+              Export
+            </button>
+            
+            <button
+              onClick={handleBulkUpdate}
+              className="flex-1 sm:flex-none items-center justify-center px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all font-bold tracking-wide flex"
+            >
+              <Zap className="w-5 h-5 mr-2 fill-white/20" />
+              Bulk Update
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Row: Dropdown Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <select
-            className="w-full sm:w-auto px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
             value={department}
             onChange={(e) => { setDepartment(e.target.value); setPage(1); }}
           >
@@ -282,7 +315,7 @@ export default function EmployeesPage() {
           </select>
           
           <select
-            className="w-full sm:w-auto px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
             value={country}
             onChange={(e) => { setCountry(e.target.value); setPage(1); }}
           >
@@ -297,7 +330,7 @@ export default function EmployeesPage() {
           </select>
           
           <select
-            className="w-full sm:w-auto px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
             value={city}
             onChange={(e) => { setCity(e.target.value); setPage(1); }}
             disabled={!country}
@@ -311,34 +344,6 @@ export default function EmployeesPage() {
             {country === "Australia" && <><option>Sydney</option><option>Melbourne</option><option>Brisbane</option><option>Perth</option><option>Adelaide</option></>}
             {country === "Singapore" && <option>Singapore</option>}
           </select>
-        </div>
-
-        <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-3">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all font-bold tracking-wide"
-          >
-            <Plus className="w-5 h-5 mr-1" />
-            New
-          </button>
-          
-          <button
-            onClick={handleExportGlobalReport}
-            disabled={exporting}
-            className="flex items-center justify-center px-4 py-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-all font-bold tracking-wide disabled:opacity-70"
-            title="Download Master CSV Report"
-          >
-            {exporting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
-            Export
-          </button>
-          
-          <button
-            onClick={handleBulkUpdate}
-            className="flex items-center justify-center px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all font-bold tracking-wide"
-          >
-            <Zap className="w-5 h-5 mr-2 fill-white/20" />
-            Bulk Update
-          </button>
         </div>
       </div>
 
